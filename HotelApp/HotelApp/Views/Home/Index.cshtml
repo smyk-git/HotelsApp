@@ -1,8 +1,62 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+﻿@model IEnumerable<HotelApp.Models.Hotel>
+
+@{
+    ViewData["Title"] = "Lista hoteli";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+<h2>Lista hoteli</h2>
+
+<!-- Wyszukiwarka -->
+<form method="get" asp-controller="Home" asp-action="Index">
+    <div class="form-group">
+        <label for="searchCity">Szukaj po mieście:</label>
+        <input type="text"
+               id="searchCity"
+               name="searchCity"
+               value="@ViewBag.SearchCity"
+               class="form-control"
+               placeholder="np. Kraków" />
+
+        <button type="submit" class="btn btn-primary mt-2">Szukaj</button>
+        <a href="/Home/Index" class="btn btn-secondary mt-2">Wyczyść</a>
+    </div>
+</form>
+
+<hr />
+
+<!-- Jeśli nie ma hoteli -->
+@if (!Model.Any())
+{
+    <p>Brak hoteli do wyświetlenia.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Nazwa</th>
+                <th>Miasto</th>
+                <th>Adres</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var hotel in Model)
+            {
+                <tr>
+                    <td>@hotel.Name</td>
+                    <td>@hotel.City</td>
+                    <td>@hotel.Address</td>
+                    <td>
+                        <a asp-controller="Home"
+                           asp-action="HotelDetails"
+                           asp-route-id="@hotel.Id"
+                           class="btn btn-info btn-sm">
+                            Szczegóły
+                        </a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
