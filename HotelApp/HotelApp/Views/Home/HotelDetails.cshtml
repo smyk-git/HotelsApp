@@ -1,0 +1,77 @@
+﻿@model HotelApp.Models.Hotel
+
+@{
+    ViewData["Title"] = "Szczegóły hotelu";
+}
+
+<h2>@Model.Name</h2>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h4>Informacje o hotelu</h4>
+        <p><strong>Miasto:</strong> @Model.City</p>
+        <p><strong>Adres:</strong> @Model.Address</p>
+    </div>
+</div>
+
+<hr />
+
+<h4>Pokoje dostępne w tym hotelu</h4>
+
+@if (Model.Rooms == null || !Model.Rooms.Any())
+{
+    <p>Brak pokoi w tym hotelu.</p>
+}
+else
+{
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Numer</th>
+                <th>Pojemność</th>
+                <th>Cena za dobę</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var room in Model.Rooms)
+            {
+                <tr>
+                    <td>@room.Number</td>
+                    <td>@room.Capacity osób</td>
+                    <td>@room.PricePerNight zł</td>
+                    <td>
+                        @if (room.IsAvailable)
+                        {
+                            <span class="text-success">Aktywny</span>
+                        }
+                        else
+                        {
+                            <span class="text-danger">Nieaktywny</span>
+                        }
+                    </td>
+                    <td>
+                        @if (room.IsAvailable)
+                        {
+                            <a asp-controller="Reservations"
+                               asp-action="Create"
+                               asp-route-roomId="@room.Id"
+                               class="btn btn-primary btn-sm">
+                                Zarezerwuj
+                            </a>
+                        }
+                        else
+                        {
+                            <button class="btn btn-secondary btn-sm" disabled>
+                                Niedostępny
+                            </button>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<a asp-action="Index" class="btn btn-outline-secondary">Powrót do listy hoteli</a>
