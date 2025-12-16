@@ -28,6 +28,7 @@ namespace HotelApp.Models
         public int GuestsCount { get; set; }
 
         [Required]
+
         [StringLength(20)]
         public string Status { get; set; } = "Pending"; // Pending / Confirmed / Cancelled
 
