@@ -8,37 +8,48 @@
 
 <h4>Reservation</h4>
 <hr />
+<div class="text-danger">
+    @foreach (var ms in ViewData.ModelState)
+    {
+        foreach (var err in ms.Value.Errors)
+        {
+            <div>@ms.Key: @err.ErrorMessage</div>
+        }
+    }
+</div>
 <div class="row">
     <div class="col-md-4">
         <form asp-action="Create">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div asp-validation-summary="All" class="text-danger"></div>
             <div class="form-group">
                 <label asp-for="RoomId" class="control-label"></label>
                 <select asp-for="RoomId" class ="form-control" asp-items="ViewBag.RoomId"></select>
             </div>
-            <div class="form-group">
-                <label asp-for="UserId" class="control-label"></label>
-                <select asp-for="UserId" class ="form-control" asp-items="ViewBag.UserId"></select>
-            </div>
+            @if (User.IsInRole("Admin"))
+            {
+                <div class="form-group">
+                    <label class="control-label">User</label>
+                    <select name="userId"
+                            class="form-control"
+                            asp-items="ViewBag.UserId">
+                    </select>
+                    <span asp-validation-for="UserId" class="text-danger"></span>
+                </div>
+            }
             <div class="form-group">
                 <label asp-for="CheckIn" class="control-label"></label>
-                <input asp-for="CheckIn" class="form-control" />
+                <input asp-for="CheckIn" class="form-control" type="date"/>
                 <span asp-validation-for="CheckIn" class="text-danger"></span>
             </div>
             <div class="form-group">
                 <label asp-for="CheckOut" class="control-label"></label>
-                <input asp-for="CheckOut" class="form-control" />
+                <input asp-for="CheckOut" class="form-control" type="date" />
                 <span asp-validation-for="CheckOut" class="text-danger"></span>
             </div>
             <div class="form-group">
                 <label asp-for="GuestsCount" class="control-label"></label>
                 <input asp-for="GuestsCount" class="form-control" />
                 <span asp-validation-for="GuestsCount" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="Status" class="control-label"></label>
-                <input asp-for="Status" class="form-control" />
-                <span asp-validation-for="Status" class="text-danger"></span>
             </div>
             <div class="form-group">
                 <input type="submit" value="Create" class="btn btn-primary" />

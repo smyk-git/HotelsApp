@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using HotelApp.Areas.Identity.Data;
 using HotelApp.Models;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 
 namespace HotelApp.Controllers
 {
@@ -15,17 +16,32 @@ namespace HotelApp.Controllers
     public class ReservationsController : Controller
     {
         private readonly AppDbContext _context;
+        private readonly UserManager<AppUser> _userManager;
 
-        public ReservationsController(AppDbContext context)
+        public ReservationsController(AppDbContext context, UserManager<AppUser> userManaegr)
         {
             _context = context;
+            _userManager = userManaegr;
         }
 
         // GET: Reservations
         public async Task<IActionResult> Index()
         {
-            var appDbContext = _context.Reservations.Include(r => r.Room).Include(r => r.User);
-            return View(await appDbContext.ToListAsync());
+            if (User.IsInRole("Admin"))
+            {
+                return View(await _context.Reservations
+                    .Include(r => r.Room)
+                    .Include(r => r.User)
+                    .ToListAsync());
+            }
+
+            var userId = _userManager.GetUserId(User);
+
+            return View(await _context.Reservations
+                .Where(r => r.UserId == userId)
+                .Include(r => r.Room)
+                .Include(r => r.User)
+                .ToListAsync());
         }
 
         // GET: Reservations/Details/5
@@ -45,6 +61,12 @@ namespace HotelApp.Controllers
                 return NotFound();
             }
 
+            if (!User.IsInRole("Admin"))
+            {
+                var userId = _userManager.GetUserId(User);
+                if (reservation.UserId != userId) return NotFound(); 
+            }
+
             return View(reservation);
         }
 
@@ -52,8 +74,12 @@ namespace HotelApp.Controllers
         public IActionResult Create()
         {
             ViewData["RoomId"] = new SelectList(_context.Rooms, "Id", "Number");
-            ViewData["UserId"] = new SelectList(_context.Users, "Id", "Id");
+            if(User.IsInRole("Admin"))
+            {
+                ViewData["UserId"] = new SelectList(_context.Users, "Id", "Email");
+            }
             return View();
+            
         }
 
         // POST: Reservations/Create
@@ -61,34 +87,48 @@ namespace HotelApp.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,RoomId,UserId,CheckIn,CheckOut,GuestsCount,Status")] Reservation reservation)
+        public async Task<IActionResult> Create([Bind("Id,RoomId,CheckIn,CheckOut,GuestsCount,Status")] Reservation reservation, string? userId)
         {
+            // jeśli admin, może podać userId (z formularza)
+            if (User.IsInRole("Admin"))
+            {
+                if (string.IsNullOrWhiteSpace(userId))
+                {
+                    ModelState.AddModelError("UserId", "Wybierz użytkownika.");
+                }
+                else
+                {
+                    reservation.UserId = userId;
+                }
+            }
+            else
+            {
+                // zwykły user zawsze dla siebie
+                reservation.UserId = _userManager.GetUserId(User);
+            }
+
+            ModelState.Remove(nameof(Reservation.UserId));
+
+
+            // domyślny status rezerwacji
+            if (string.IsNullOrWhiteSpace(reservation.Status))
+                reservation.Status = "Pending";
+
             if (ModelState.IsValid)
             {
                 _context.Add(reservation);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["RoomId"] = new SelectList(_context.Rooms, "Id", "Number", reservation.RoomId);
-            ViewData["UserId"] = new SelectList(_context.Users, "Id", "Id", reservation.UserId);
-            return View(reservation);
-        }
 
-        // GET: Reservations/Edit/5
-        public async Task<IActionResult> Edit(int? id)
-        {
-            if (id == null)
+            // odtwórz selecty na powrót widoku
+            ViewData["RoomId"] = new SelectList(_context.Rooms, "Id", "Number", reservation.RoomId);
+
+            if (User.IsInRole("Admin"))
             {
-                return NotFound();
+                ViewData["UserId"] = new SelectList(_context.Users, "Id", "Email", reservation.UserId);
             }
 
-            var reservation = await _context.Reservations.FindAsync(id);
-            if (reservation == null)
-            {
-                return NotFound();
-            }
-            ViewData["RoomId"] = new SelectList(_context.Rooms, "Id", "Number", reservation.RoomId);
-            ViewData["UserId"] = new SelectList(_context.Users, "Id", "Id", reservation.UserId);
             return View(reservation);
         }
 
@@ -128,6 +168,20 @@ namespace HotelApp.Controllers
             ViewData["UserId"] = new SelectList(_context.Users, "Id", "Id", reservation.UserId);
             return View(reservation);
         }
+        [HttpGet]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Edit(int? id)
+        {
+            if (id == null) return NotFound();
+
+            var reservation = await _context.Reservations.FindAsync(id);
+            if (reservation == null) return NotFound();
+
+            ViewData["RoomId"] = new SelectList(_context.Rooms, "Id", "Number", reservation.RoomId);
+            ViewData["UserId"] = new SelectList(_context.Users, "Id", "Email", reservation.UserId);
+
+            return View(reservation);
+        }
 
         // GET: Reservations/Delete/5
         public async Task<IActionResult> Delete(int? id)
@@ -144,6 +198,12 @@ namespace HotelApp.Controllers
             if (reservation == null)
             {
                 return NotFound();
+            }
+
+            if (!User.IsInRole("Admin"))
+            {
+                var userId = _userManager.GetUserId(User);
+                if (reservation.UserId != userId) return Forbid(); 
             }
 
             return View(reservation);

@@ -9,6 +9,15 @@
 <h4>Reservation</h4>
 <hr />
 <div class="row">
+    <div class="text-danger">
+        @foreach (var ms in ViewData.ModelState)
+        {
+            foreach (var err in ms.Value.Errors)
+            {
+                <div>@ms.Key: @err.ErrorMessage</div>
+            }
+        }
+    </div>
     <div class="col-md-4">
         <form asp-action="Edit">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
@@ -19,7 +28,7 @@
                 <span asp-validation-for="RoomId" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="UserId" class="control-label"></label>
+                <label asp-for="UserId" class="control-label">User</label>
                 <select asp-for="UserId" class="form-control" asp-items="ViewBag.UserId"></select>
                 <span asp-validation-for="UserId" class="text-danger"></span>
             </div>
